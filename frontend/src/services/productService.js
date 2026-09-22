@@ -1,13 +1,155 @@
 import { api, isDemo } from './api';
-export const demoProducts = [
-  { id: '1', nombre: 'Laptop Studio 14', marca: 'CLOUDSHOP SELECT', categoria: 'Laptops', precio: 3299, stock: 8, tipo: 'laptop', color: '#7c8f82', descripcion: 'Una laptop ligera para estudiar, trabajar y llevar tus proyectos a cualquier lugar.', specs: { Procesador: 'Intel Core i5', Memoria: '16 GB RAM', Almacenamiento: '512 GB SSD', Pantalla: '14 pulgadas · Full HD' } },
-  { id: '2', nombre: 'Audífonos Wireless Pro', marca: 'CLOUDSHOP SELECT', categoria: 'Audio', precio: 249, stock: 24, tipo: 'headphones', color: '#c4b69e', descripcion: 'Audio inalámbrico y un diseño cómodo para acompañarte durante el día.', specs: { Conexión: 'Bluetooth 5.3', Autonomía: 'Hasta 30 horas', Carga: 'USB-C', Formato: 'Over-ear' } },
-  { id: '3', nombre: 'Teclado mecánico K75', marca: 'CLOUDSHOP SELECT', categoria: 'Accesorios', precio: 289, stock: 12, tipo: 'keyboard', color: '#bac7ba', descripcion: 'Un formato compacto que deja más espacio en tu escritorio sin renunciar a lo esencial.', specs: { Distribución: 'Español · 75 %', Switches: 'Mecánicos táctiles', Conexión: 'USB-C', Material: 'ABS' } },
-  { id: '4', nombre: 'Monitor View 27', marca: 'CLOUDSHOP SELECT', categoria: 'Monitores', precio: 899, stock: 5, tipo: 'monitor', color: '#a3b4be', descripcion: 'Más espacio para tus ideas. Una pantalla amplia para trabajar y disfrutar tu contenido.', specs: { Pantalla: '27 pulgadas · IPS', Resolución: '2560 × 1440', Frecuencia: '75 Hz', Puertos: 'HDMI / DisplayPort' } },
-  { id: '5', nombre: 'Mouse inalámbrico M3', marca: 'CLOUDSHOP SELECT', categoria: 'Accesorios', precio: 119, stock: 0, tipo: 'mouse', color: '#c5bcaa', descripcion: 'Precisión y comodidad en un mouse compacto, pensado para el uso diario.', specs: { Sensor: 'Óptico · 2400 DPI', Conexión: 'Bluetooth / USB', Botones: '6', Alimentación: 'Recargable' } },
-  { id: '6', nombre: 'Parlante portátil Mini', marca: 'CLOUDSHOP SELECT', categoria: 'Audio', precio: 159, stock: 18, tipo: 'speaker', color: '#9eafa0', descripcion: 'Tu música, donde estés. Un parlante pequeño y fácil de llevar.', specs: { Potencia: '10 W', Conexión: 'Bluetooth 5.3', Autonomía: 'Hasta 12 horas', Carga: 'USB-C' } },
+
+export let demoCategories = [
+  { id: 1, nombre: 'Laptops', descripcion: '' },
+  { id: 2, nombre: 'Audio', descripcion: '' },
+  { id: 3, nombre: 'Accesorios', descripcion: '' },
+  { id: 4, nombre: 'Monitores', descripcion: '' },
 ];
+
+export let demoProducts = [
+  { id: 1, nombre: 'Laptop Studio 14', marca: 'CLOUDSHOP SELECT', categoria: 'Laptops', categoria_id: 1, sku: 'DEMO-0001', precio: 3299, precio_oferta: 3699, stock: 8, descripcion: 'Una laptop ligera para estudiar, trabajar y llevar tus proyectos a cualquier lugar.', imagen_url: '', tipo: 'laptop', color: '#7c8f82', activo: true },
+  { id: 2, nombre: 'Audífonos Wireless Pro', marca: 'CLOUDSHOP SELECT', categoria: 'Audio', categoria_id: 2, sku: 'DEMO-0002', precio: 249, precio_oferta: null, stock: 24, descripcion: 'Audio inalámbrico y un diseño cómodo para acompañarte durante el día.', imagen_url: '', tipo: 'headphones', color: '#c4b69e', activo: true },
+  { id: 3, nombre: 'Teclado mecánico K75', marca: 'CLOUDSHOP SELECT', categoria: 'Accesorios', categoria_id: 3, sku: 'DEMO-0003', precio: 289, precio_oferta: null, stock: 12, descripcion: 'Un formato compacto que deja más espacio en tu escritorio sin renunciar a lo esencial.', imagen_url: '', tipo: 'keyboard', color: '#bac7ba', activo: true },
+  { id: 4, nombre: 'Monitor View 27', marca: 'CLOUDSHOP SELECT', categoria: 'Monitores', categoria_id: 4, sku: 'DEMO-0004', precio: 899, precio_oferta: null, stock: 5, descripcion: 'Más espacio para tus ideas. Una pantalla amplia para trabajar y disfrutar tu contenido.', imagen_url: '', tipo: 'monitor', color: '#a3b4be', activo: true },
+  { id: 5, nombre: 'Mouse inalámbrico M3', marca: 'CLOUDSHOP SELECT', categoria: 'Accesorios', categoria_id: 3, sku: 'DEMO-0005', precio: 119, precio_oferta: null, stock: 0, descripcion: 'Precisión y comodidad en un mouse compacto, pensado para el uso diario.', imagen_url: '', tipo: 'mouse', color: '#c5bcaa', activo: true },
+  { id: 6, nombre: 'Parlante portátil Mini', marca: 'CLOUDSHOP SELECT', categoria: 'Audio', categoria_id: 2, sku: 'DEMO-0006', precio: 159, precio_oferta: null, stock: 18, descripcion: 'Tu música, donde estés. Un parlante pequeño y fácil de llevar.', imagen_url: '', tipo: 'speaker', color: '#9eafa0', activo: true },
+];
+let nextProductId = 7;
+let nextCategoryId = 5;
+
+function normalizar(producto) {
+  return {
+    id: producto.id,
+    nombre: producto.nombre,
+    marca: producto.marca || '',
+    categoria: producto.categoria_nombre || producto.categoria || '',
+    categoria_id: producto.categoria_id,
+    sku: producto.sku || '',
+    precio: Number(producto.precio),
+    precio_oferta: producto.precio_oferta && Number(producto.precio_oferta) > 0 ? Number(producto.precio_oferta) : null,
+    stock: Number(producto.stock_disponible ?? producto.stock ?? 0),
+    descripcion: producto.descripcion || '',
+    imagen_url: producto.imagen_url || '',
+    origen_url: producto.origen_url || '',
+    activo: producto.activo,
+  };
+}
+
+function demoList({ q = '', categoria_id = '', page = 1, limit = 24 } = {}) {
+  let items = demoProducts;
+  if (categoria_id) items = items.filter(p => p.categoria_id === Number(categoria_id));
+  if (q) items = items.filter(p => `${p.nombre} ${p.marca}`.toLowerCase().includes(q.toLowerCase()));
+  const total = items.length;
+  const pages = Math.max(1, Math.ceil(total / limit));
+  const start = (page - 1) * limit;
+  return { data: items.slice(start, start + limit), total, page, limit, pages };
+}
+
 export const productService = {
-  list: () => isDemo ? Promise.resolve(demoProducts) : api('/catalogo/productos'),
-  get: (id) => isDemo ? Promise.resolve(demoProducts.find(p => p.id === id) || null) : api(`/catalogo/productos/${encodeURIComponent(id)}`),
+  async list(params = {}) {
+    if (isDemo) return demoList(params);
+    const query = new URLSearchParams();
+    if (params.q) query.set('q', params.q);
+    if (params.categoria_id) query.set('categoria_id', params.categoria_id);
+    query.set('page', String(params.page || 1));
+    query.set('limit', String(params.limit || 24));
+    const res = await api(`/api/catalogo/productos?${query.toString()}`);
+    return { data: (res.data || []).map(normalizar), total: res.total, page: res.page, limit: res.limit, pages: res.pages };
+  },
+  async get(id) {
+    if (isDemo) return demoProducts.find(p => String(p.id) === String(id)) || null;
+    const res = await api(`/api/catalogo/productos/${encodeURIComponent(id)}`);
+    return res.data ? normalizar(res.data) : null;
+  },
+  async categories() {
+    if (isDemo) return demoCategories;
+    const res = await api('/api/catalogo/categorias');
+    return res.data || [];
+  },
+  // --- Administración (solo admin) ---
+  // Los formularios entregan valores de FormData (siempre strings); la API espera
+  // JSON tipado (categoria_id/precio numéricos), así que se convierten aquí antes de enviar.
+  async createProduct(values) {
+    const payload = {
+      categoria_id: Number(values.categoria_id),
+      sku: values.sku,
+      nombre: values.nombre,
+      descripcion: values.descripcion || '',
+      marca: values.marca || '',
+      imagen_url: values.imagen_url || '',
+      precio: Number(values.precio),
+      stock_disponible: Number(values.stock_disponible || 0),
+    };
+    if (!isDemo) {
+      const res = await api('/api/catalogo/productos', { method: 'POST', body: JSON.stringify(payload) });
+      return normalizar(res.data);
+    }
+    const categoria = demoCategories.find(c => c.id === payload.categoria_id);
+    const producto = {
+      id: nextProductId++,
+      nombre: payload.nombre,
+      marca: payload.marca,
+      categoria: categoria?.nombre || '',
+      categoria_id: payload.categoria_id,
+      sku: payload.sku || `DEMO-${String(nextProductId).padStart(4, '0')}`,
+      precio: payload.precio,
+      precio_oferta: null,
+      stock: payload.stock_disponible,
+      descripcion: payload.descripcion,
+      imagen_url: payload.imagen_url || '',
+      activo: true,
+    };
+    demoProducts = [...demoProducts, producto];
+    return producto;
+  },
+  async updateProduct(id, values) {
+    const payload = {};
+    if (values.nombre !== undefined) payload.nombre = values.nombre;
+    if (values.categoria_id !== undefined) payload.categoria_id = Number(values.categoria_id);
+    if (values.marca !== undefined) payload.marca = values.marca;
+    if (values.precio !== undefined) payload.precio = Number(values.precio);
+    if (values.descripcion !== undefined) payload.descripcion = values.descripcion;
+    if (values.imagen_url !== undefined) payload.imagen_url = values.imagen_url;
+
+    if (!isDemo) {
+      const res = await api(`/api/catalogo/productos/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(payload) });
+      return normalizar(res.data);
+    }
+    const categoria = payload.categoria_id !== undefined ? demoCategories.find(c => c.id === payload.categoria_id) : null;
+    demoProducts = demoProducts.map(p => String(p.id) === String(id)
+      ? { ...p, ...payload, categoria: categoria ? categoria.nombre : p.categoria }
+      : p);
+    return demoProducts.find(p => String(p.id) === String(id));
+  },
+  async deleteProduct(id) {
+    if (!isDemo) return api(`/api/catalogo/productos/${encodeURIComponent(id)}`, { method: 'DELETE' });
+    demoProducts = demoProducts.map(p => String(p.id) === String(id) ? { ...p, activo: false } : p);
+    return { message: 'Producto desactivado correctamente' };
+  },
+  async createCategory(values) {
+    if (!isDemo) {
+      const res = await api('/api/catalogo/categorias', { method: 'POST', body: JSON.stringify(values) });
+      return res.data;
+    }
+    const categoria = { id: nextCategoryId++, nombre: values.nombre, descripcion: values.descripcion || '' };
+    demoCategories = [...demoCategories, categoria];
+    return categoria;
+  },
+  async updateCategory(id, values) {
+    if (!isDemo) {
+      const res = await api(`/api/catalogo/categorias/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(values) });
+      return res.data;
+    }
+    demoCategories = demoCategories.map(c => String(c.id) === String(id) ? { ...c, ...values } : c);
+    return demoCategories.find(c => String(c.id) === String(id));
+  },
+  async deleteCategory(id) {
+    if (!isDemo) return api(`/api/catalogo/categorias/${encodeURIComponent(id)}`, { method: 'DELETE' });
+    if (demoProducts.some(p => String(p.categoria_id) === String(id))) {
+      throw new Error('No se puede eliminar: hay productos asignados a esta categoría.');
+    }
+    demoCategories = demoCategories.filter(c => String(c.id) !== String(id));
+    return { message: 'Categoría eliminada correctamente' };
+  },
 };

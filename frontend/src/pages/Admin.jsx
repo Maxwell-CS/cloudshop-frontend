@@ -4,6 +4,7 @@ import { useAuth } from '../hooks/useAuth';
 import { productService } from '../services/productService';
 import { authService } from '../services/authService';
 import { ventasService } from '../services/ventasService';
+import AdminAnalitica from './AdminAnalitica';
 import RequestState from '../components/RequestState';
 import { money } from '../utils/format';
 
@@ -12,6 +13,7 @@ const TABS = [
   { id: 'categorias', label: 'Categorías' },
   { id: 'usuarios', label: 'Usuarios' },
   { id: 'ordenes', label: 'Órdenes' },
+  { id: 'analitica', label: 'Analítica' },
 ];
 
 export default function Admin() {
@@ -25,6 +27,7 @@ export default function Admin() {
     {tab === 'categorias' && <AdminCategorias/>}
     {tab === 'usuarios' && <AdminUsuarios/>}
     {tab === 'ordenes' && <AdminOrdenes/>}
+    {tab === 'analitica' && <AdminAnalitica/>}
   </main>;
 }
 

@@ -101,9 +101,6 @@ export default function AdminAnalitica() {
       {reports.map(item => <button key={item.id} type="button" className={selected === item.id ? 'selected' : ''} aria-pressed={selected === item.id} onClick={() => setSelected(item.id)}>{item.label}</button>)}
     </div>
     <h3 className="analytics-title">{report.label}</h3>
-    {isDemo
-      ? <div className="notice analytics-demo" role="status"><p>La analítica de Athena está disponible cuando el frontend se conecte al backend real. Esta versión está en modo demo y no muestra cifras inventadas.</p></div>
-      : <ReportResults key={report.id} report={report}/>}
-    <p className="analytics-footnote">Los resultados se actualizan después de ejecutar la ingesta hacia S3.</p>
+    {!isDemo && <ReportResults key={report.id} report={report}/>}
   </section>;
 }

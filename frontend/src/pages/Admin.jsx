@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useFetch } from '../hooks/useFetch';
 import { useAuth } from '../hooks/useAuth';
 import { productService } from '../services/productService';
@@ -6,7 +6,10 @@ import { authService } from '../services/authService';
 import { ventasService } from '../services/ventasService';
 import AdminAnalitica from './AdminAnalitica';
 import RequestState from '../components/RequestState';
+import Pagination from '../components/Pagination';
 import { money } from '../utils/format';
+
+const PAGE_SIZE = 20; // filas por página en las tablas de administración
 
 const TABS = [
   { id: 'productos', label: 'Productos' },
@@ -33,8 +36,9 @@ export default function Admin() {
 
 function AdminProductos() {
   const [reloadKey, setReloadKey] = useState(0);
-  const loadProducts = useCallback(() => productService.list({ limit: 100 }), [reloadKey]);
-  const productsReq = useFetch(loadProducts, reloadKey);
+  const [page, setPage] = useState(1);
+  const loadProducts = useCallback(() => productService.list({ page, limit: PAGE_SIZE }), [reloadKey, page]);
+  const productsReq = useFetch(loadProducts, `${reloadKey}|${page}`);
   const categoriesReq = useFetch(productService.categories);
   const categories = categoriesReq.data || [];
   const [editing, setEditing] = useState(null); // null | 'new' | <id>
@@ -43,6 +47,9 @@ function AdminProductos() {
 
   const reload = () => setReloadKey(k => k + 1);
   const productos = productsReq.data?.data || [];
+  const pages = productsReq.data?.pages ?? 1;
+  // Si al desactivar/borrar la última fila la página queda fuera de rango, retrocede.
+  useEffect(() => { if (page > pages) setPage(pages); }, [page, pages]);
   const productoEditando = editing && editing !== 'new' ? productos.find(p => String(p.id) === String(editing)) : null;
 
   async function submit(e) {
@@ -92,17 +99,24 @@ function AdminProductos() {
         <td className="admin-actions"><button className="text-button" onClick={() => setEditing(p.id)}>Editar</button>{p.activo !== false && <button className="text-button" onClick={() => desactivar(p.id)}>Desactivar</button>}</td>
       </tr>)}</tbody>
     </table>}
+    {!productsReq.loading && !productsReq.error && <Pagination page={page} pages={pages} onChange={setPage}/>}
   </section>;
 }
 
 function AdminCategorias() {
   const [reloadKey, setReloadKey] = useState(0);
+  const [page, setPage] = useState(1);
   const loadCategories = useCallback(() => productService.categories(), [reloadKey]);
   const categoriesReq = useFetch(loadCategories, reloadKey);
   const categories = categoriesReq.data || [];
   const [editing, setEditing] = useState(null);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+
+  // El servicio de categorías devuelve la lista completa, así que paginamos en el cliente.
+  const pages = Math.max(1, Math.ceil(categories.length / PAGE_SIZE));
+  useEffect(() => { if (page > pages) setPage(pages); }, [page, pages]);
+  const visibles = categories.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   const reload = () => setReloadKey(k => k + 1);
   const categoriaEditando = editing && editing !== 'new' ? categories.find(c => String(c.id) === String(editing)) : null;
@@ -138,20 +152,25 @@ function AdminCategorias() {
     <RequestState {...categoriesReq}/>
     {!categoriesReq.loading && !categoriesReq.error && <table className="admin-table">
       <thead><tr><th>Nombre</th><th>Descripción</th><th/></tr></thead>
-      <tbody>{categories.map(c => <tr key={c.id}>
+      <tbody>{visibles.map(c => <tr key={c.id}>
         <td>{c.nombre}</td><td>{c.descripcion}</td>
         <td className="admin-actions"><button className="text-button" onClick={() => setEditing(c.id)}>Editar</button><button className="text-button" onClick={() => eliminar(c.id)}>Eliminar</button></td>
       </tr>)}</tbody>
     </table>}
+    {!categoriesReq.loading && !categoriesReq.error && <Pagination page={page} pages={pages} onChange={setPage}/>}
   </section>;
 }
 
 function AdminUsuarios() {
   const { user: currentUser } = useAuth();
   const [reloadKey, setReloadKey] = useState(0);
-  const loadUsers = useCallback(() => authService.listUsers(), [reloadKey]);
-  const usersReq = useFetch(loadUsers, reloadKey);
+  const [page, setPage] = useState(1);
+  const loadUsers = useCallback(() => authService.listUsers({ page, limit: PAGE_SIZE }), [reloadKey, page]);
+  const usersReq = useFetch(loadUsers, `${reloadKey}|${page}`);
   const reload = () => setReloadKey(k => k + 1);
+  const usuarios = usersReq.data?.data || [];
+  const pages = usersReq.data?.pages ?? 1;
+  useEffect(() => { if (page > pages) setPage(pages); }, [page, pages]);
 
   async function cambiarRol(id, rol) {
     await authService.setRol(id, rol);
@@ -168,7 +187,7 @@ function AdminUsuarios() {
     <RequestState {...usersReq}/>
     {!usersReq.loading && !usersReq.error && <table className="admin-table">
       <thead><tr><th>Nombre</th><th>Correo</th><th>Estado</th><th>Rol</th><th/></tr></thead>
-      <tbody>{(usersReq.data?.data || []).map(u => <tr key={u.id}>
+      <tbody>{usuarios.map(u => <tr key={u.id}>
         <td>{u.nombre}</td><td>{u.email}</td>
         <td><span className={u.estado === 'inactivo' ? 'sold-out' : 'stock'}>{u.estado}</span></td>
         <td>{u.rol}</td>
@@ -178,22 +197,29 @@ function AdminUsuarios() {
         </td>
       </tr>)}</tbody>
     </table>}
+    {!usersReq.loading && !usersReq.error && <Pagination page={page} pages={pages} onChange={setPage}/>}
   </section>;
 }
 
 function AdminOrdenes() {
-  const ordersReq = useFetch(ventasService.todas);
+  const [page, setPage] = useState(1);
+  const loadOrders = useCallback(() => ventasService.todas({ page, limit: PAGE_SIZE }), [page]);
+  const ordersReq = useFetch(loadOrders, page);
+  const ordenes = ordersReq.data?.data || [];
+  const pages = ordersReq.data?.pages ?? 1;
+  useEffect(() => { if (page > pages) setPage(pages); }, [page, pages]);
   return <section className="admin-section">
     <div className="section-heading"><h2>Órdenes y ventas</h2></div>
     <RequestState {...ordersReq}/>
-    {!ordersReq.loading && !ordersReq.error && (ordersReq.data?.length
-      ? <table className="admin-table">
+    {!ordersReq.loading && !ordersReq.error && (ordenes.length
+      ? <><table className="admin-table">
           <thead><tr><th>ID</th><th>Usuario</th><th>Total</th><th>Estado</th><th>Fecha</th></tr></thead>
-          <tbody>{ordersReq.data.map(v => <tr key={v._id}>
+          <tbody>{ordenes.map(v => <tr key={v._id}>
             <td>{v._id}</td><td>{v.usuario_id}</td><td>{money(v.total)}</td><td>{v.estado}</td>
             <td>{new Date(v.creado_en).toLocaleString('es-PE')}</td>
           </tr>)}</tbody>
         </table>
+        <Pagination page={page} pages={pages} onChange={setPage}/></>
       : <div className="notice"><p>Todavía no hay órdenes registradas.</p></div>)}
   </section>;
 }

@@ -45,9 +45,13 @@ export const authService = {
     return address;
   },
   // --- Administración (solo admin) ---
-  async listUsers() {
-    if (!isDemo) return api('/usuarios?page=1&limit=100');
-    return { data: users.map(publicUser), total: users.length, page: 1, limit: users.length };
+  async listUsers({ page = 1, limit = 20 } = {}) {
+    if (!isDemo) {
+      const res = await api(`/usuarios?page=${page}&limit=${limit}`);
+      return { data: res.data || [], total: res.total, page: res.page ?? page, limit: res.limit ?? limit, pages: res.pages ?? 1 };
+    }
+    const start = (page - 1) * limit;
+    return { data: users.map(publicUser).slice(start, start + limit), total: users.length, page, limit, pages: Math.max(1, Math.ceil(users.length / limit)) };
   },
   async setRol(id, rol) {
     if (!isDemo) return api(`/usuarios/${encodeURIComponent(id)}/rol`, { method: 'PATCH', body: JSON.stringify({ rol }) });

@@ -26,13 +26,14 @@ export const ventasService = {
       return demoVentas.filter(v => String(v.usuario_id) === String(usuarioId));
     }, { ttl: 30 * 1000 });
   },
-  async todas() {
-    return cached('ventas:todas', async () => {
+  async todas({ page = 1, limit = 20 } = {}) {
+    return cached(`ventas:todas:${page}:${limit}`, async () => {
       if (!isDemo) {
-        const res = await api('/ventas?page=1&limit=100');
-        return res.data || [];
+        const res = await api(`/ventas?page=${page}&limit=${limit}`);
+        return { data: res.data || [], total: res.total, page: res.page ?? page, pages: res.pages ?? 1 };
       }
-      return demoVentas;
+      const start = (page - 1) * limit;
+      return { data: demoVentas.slice(start, start + limit), total: demoVentas.length, page, pages: Math.max(1, Math.ceil(demoVentas.length / limit)) };
     }, { ttl: 30 * 1000 });
   },
   async obtener(id) {

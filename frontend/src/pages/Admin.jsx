@@ -3,7 +3,6 @@ import { useFetch } from '../hooks/useFetch';
 import { useAuth } from '../hooks/useAuth';
 import { productService } from '../services/productService';
 import { authService } from '../services/authService';
-import { ventasService } from '../services/ventasService';
 import AdminAnalitica from './AdminAnalitica';
 import RequestState from '../components/RequestState';
 import Pagination from '../components/Pagination';
@@ -15,7 +14,6 @@ const TABS = [
   { id: 'productos', label: 'Productos' },
   { id: 'categorias', label: 'Categorías' },
   { id: 'usuarios', label: 'Usuarios' },
-  { id: 'ordenes', label: 'Órdenes' },
   { id: 'analitica', label: 'Analítica' },
 ];
 
@@ -29,11 +27,9 @@ export default function Admin() {
     {tab === 'productos' && <AdminProductos/>}
     {tab === 'categorias' && <AdminCategorias/>}
     {tab === 'usuarios' && <AdminUsuarios/>}
-    {tab === 'ordenes' && <AdminOrdenes/>}
     {tab === 'analitica' && <AdminAnalitica/>}
   </main>;
 }
-
 function AdminProductos() {
   const [reloadKey, setReloadKey] = useState(0);
   const [page, setPage] = useState(1);
@@ -198,28 +194,5 @@ function AdminUsuarios() {
       </tr>)}</tbody>
     </table>}
     {!usersReq.loading && !usersReq.error && <Pagination page={page} pages={pages} onChange={setPage}/>}
-  </section>;
-}
-
-function AdminOrdenes() {
-  const [page, setPage] = useState(1);
-  const loadOrders = useCallback(() => ventasService.todas({ page, limit: PAGE_SIZE }), [page]);
-  const ordersReq = useFetch(loadOrders, page);
-  const ordenes = ordersReq.data?.data || [];
-  const pages = ordersReq.data?.pages ?? 1;
-  useEffect(() => { if (page > pages) setPage(pages); }, [page, pages]);
-  return <section className="admin-section">
-    <div className="section-heading"><h2>Órdenes y ventas</h2></div>
-    <RequestState {...ordersReq}/>
-    {!ordersReq.loading && !ordersReq.error && (ordenes.length
-      ? <><table className="admin-table">
-          <thead><tr><th>ID</th><th>Usuario</th><th>Total</th><th>Estado</th><th>Fecha</th></tr></thead>
-          <tbody>{ordenes.map(v => <tr key={v._id}>
-            <td>{v._id}</td><td>{v.usuario_id}</td><td>{money(v.total)}</td><td>{v.estado}</td>
-            <td>{new Date(v.creado_en).toLocaleString('es-PE')}</td>
-          </tr>)}</tbody>
-        </table>
-        <Pagination page={page} pages={pages} onChange={setPage}/></>
-      : <div className="notice"><p>Todavía no hay órdenes registradas.</p></div>)}
   </section>;
 }

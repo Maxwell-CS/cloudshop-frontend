@@ -48,7 +48,10 @@ export const authService = {
   async listUsers({ page = 1, limit = 20 } = {}) {
     if (!isDemo) {
       const res = await api(`/usuarios?page=${page}&limit=${limit}`);
-      return { data: res.data || [], total: res.total, page: res.page ?? page, limit: res.limit ?? limit, pages: res.pages ?? 1 };
+      const usedLimit = res.limit ?? limit;
+      const total = res.total ?? (res.data || []).length;
+      // El backend de usuarios devuelve total pero no pages: lo calculamos aquí.
+      return { data: res.data || [], total, page: res.page ?? page, limit: usedLimit, pages: res.pages ?? Math.max(1, Math.ceil(total / usedLimit)) };
     }
     const start = (page - 1) * limit;
     return { data: users.map(publicUser).slice(start, start + limit), total: users.length, page, limit, pages: Math.max(1, Math.ceil(users.length / limit)) };

@@ -30,7 +30,10 @@ export const ventasService = {
     return cached(`ventas:todas:${page}:${limit}`, async () => {
       if (!isDemo) {
         const res = await api(`/ventas?page=${page}&limit=${limit}`);
-        return { data: res.data || [], total: res.total, page: res.page ?? page, pages: res.pages ?? 1 };
+        const total = res.total ?? (res.data || []).length;
+        const usedLimit = res.limit ?? limit;
+        // El backend de ventas devuelve total pero no pages: lo calculamos aquí.
+        return { data: res.data || [], total, page: res.page ?? page, pages: res.pages ?? Math.max(1, Math.ceil(total / usedLimit)) };
       }
       const start = (page - 1) * limit;
       return { data: demoVentas.slice(start, start + limit), total: demoVentas.length, page, pages: Math.max(1, Math.ceil(demoVentas.length / limit)) };
